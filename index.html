@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Osu Mania Web - Modular</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <div id="game-container">
+        <!-- PANEL IZQUIERDO: Configuración y Velocidad -->
+        <div class="panel">
+            <h3>Ajustes</h3>
+            <label>Velocidad:</label>
+            <span id="speedVal" class="label-val">0.6 px/ms</span>
+            <input type="range" id="speedRange" min="0.3" max="1.5" step="0.1" value="0.6">
+            
+            <hr style="border-color: #333; margin: 20px 0;">
+            
+            <p style="font-size: 13px; color: #aaa; line-height: 1.5;">
+                <strong>Controles:</strong><br>
+                Carril 1: <span style="color:#00ffcc">D</span><br>
+                Carril 2: <span style="color:#00ffcc">F</span><br>
+                Carril 3: <span style="color:#00ffcc">J</span><br>
+                Carril 4: <span style="color:#00ffcc">K</span>
+            </p>
+        </div>
+
+        <!-- PANEL CENTRAL: Lienzo del juego -->
+        <div>
+            <canvas id="gameCanvas" width="460" height="800"></canvas>
+        </div>
+
+        <!-- PANEL DERECHO: Título y Botón de Inicio -->
+        <div class="panel" style="text-align: center;">
+            <h2>Osu! Mania</h2>
+            <p style="font-size: 13px; color: #ccc; margin-bottom: 25px;">Houkago Mermaid<br><span style="font-size:11px; color:#777;">Shigure Ui</span></p>
+            <button id="btnPlay">Cargar y Jugar</button>
+        </div>
+    </div>
+
+    <!-- Vinculamos el archivo de lógica JavaScript -->
+    <script src="main.js"></script>
+</body>
+</html>
