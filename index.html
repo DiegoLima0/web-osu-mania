@@ -1,45 +1,68 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <title>Osu Mania Web - Modular</title>
-    <link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Osu Mania Web</title>
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
+  <div id="bg"></div>
+  <video id="bgvideo" muted playsinline preload="auto"></video>
+  <div id="dim"></div>
+  <canvas id="game"></canvas>
 
-    <div id="game-container">
-        <!-- PANEL IZQUIERDO: Configuración y Velocidad -->
-        <div class="panel">
-            <h3>Ajustes</h3>
-            <label>Velocidad:</label>
-            <span id="speedVal" class="label-val">0.6 px/ms</span>
-            <input type="range" id="speedRange" min="0.3" max="1.5" step="0.1" value="0.6">
-            
-            <hr style="border-color: #333; margin: 20px 0;">
-            
-            <p style="font-size: 13px; color: #aaa; line-height: 1.5;">
-                <strong>Controles:</strong><br>
-                Carril 1: <span style="color:#00ffcc">D</span><br>
-                Carril 2: <span style="color:#00ffcc">F</span><br>
-                Carril 3: <span style="color:#00ffcc">J</span><br>
-                Carril 4: <span style="color:#00ffcc">K</span>
-            </p>
-        </div>
+  <!-- 1. Selección de canción -->
+  <section id="screen-select" class="screen">
+    <h1>Osu! Mania <small>4K</small></h1>
+    <p class="hint">Elige una canción</p>
+    <div id="song-list"></div>
+  </section>
 
-        <!-- PANEL CENTRAL: Lienzo del juego -->
-        <div>
-            <canvas id="gameCanvas" width="460" height="800"></canvas>
-        </div>
+  <!-- 2. Canción elegida: ajustes + jugar -->
+  <section id="screen-ready" class="screen hidden">
+    <aside class="panel" id="panel-settings">
+      <h3>Ajustes</h3>
+      <div id="settings-rows"></div>
+      <h4>Teclas</h4>
+      <div id="key-row"></div>
+      <p class="hint small">Clic en una tecla y presiona la nueva.</p>
+    </aside>
+    <aside class="panel center" id="panel-info">
+      <h2 id="info-title"></h2>
+      <p id="info-meta"></p>
+      <h4>Dificultad</h4>
+      <div id="diff-list"></div>
+      <button id="btn-play" class="primary">Jugar</button>
+      <button id="btn-back" class="ghost">← Canciones</button>
+    </aside>
+  </section>
 
-        <!-- PANEL DERECHO: Título y Botón de Inicio -->
-        <div class="panel" style="text-align: center;">
-            <h2>Osu! Mania</h2>
-            <p style="font-size: 13px; color: #ccc; margin-bottom: 25px;">Houkago Mermaid<br><span style="font-size:11px; color:#777;">Shigure Ui</span></p>
-            <button id="btnPlay">Cargar y Jugar</button>
-        </div>
+  <!-- 3. Pausa -->
+  <section id="screen-pause" class="screen hidden overlay">
+    <div class="panel center">
+      <h2>Pausa</h2>
+      <button id="btn-resume" class="primary">Continuar</button>
+      <button id="btn-retry" class="ghost">Reintentar</button>
+      <button id="btn-quit" class="ghost">Salir</button>
     </div>
+  </section>
 
-    <!-- Vinculamos el archivo de lógica JavaScript -->
-    <script src="main.js"></script>
+  <!-- 4. Resultados -->
+  <section id="screen-results" class="screen hidden overlay">
+    <div class="panel results">
+      <div id="res-rank">S</div>
+      <h2 id="res-title"></h2>
+      <div class="res-main"><div><span>Puntuación</span><b id="res-score"></b></div>
+        <div><span>Precisión</span><b id="res-acc"></b></div>
+        <div><span>Combo máx.</span><b id="res-combo"></b></div></div>
+      <div id="res-counts"></div>
+      <button id="btn-again" class="primary">Volver a jugar</button>
+      <button id="btn-songs" class="ghost">Elegir canción</button>
+    </div>
+  </section>
+
+  <div id="loading" class="hidden">Cargando…</div>
+  <script type="module" src="js/main.js"></script>
 </body>
 </html>

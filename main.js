@@ -1,4 +1,6 @@
 const BASE_URL = "https://raw.githubusercontent.com/DiegoLima0/web-osu-mania/main/2551742%20Shigure%20Ui%20-%20Houkago%20Mermaid/";
+const BASE_SKIN_URL = "https://raw.githubusercontent.com/DiegoLima0/web-osu-mania/main/skin/";
+
 const urlAudio = BASE_URL + "audio.mp3";
 const urlOsu = BASE_URL + "dificultad.osu";
 
@@ -7,7 +9,7 @@ const ctx = canvas.getContext('2d');
 
 const CANTIDAD_TECLAS = 4;
 const ANCHO_CARRIL = canvas.width / CANTIDAD_TECLAS;
-const LINEA_JUICIO_Y = 700;
+const LINEA_JUICIO_Y = 760;
 
 const speedRange = document.getElementById('speedRange');
 const speedVal = document.getElementById('speedVal');
@@ -18,6 +20,23 @@ speedRange.addEventListener('input', (e) => {
     VELOCIDAD_CAIDA = parseFloat(e.target.value);
     speedVal.innerText = VELOCIDAD_CAIDA.toFixed(1) + " px/ms";
 });
+
+// --- CARGA DE IMÁGENES DE LA SKIN ---
+const imagenesSkin = {
+    notas: [new Image(), new Image(), new Image(), new Image()],
+    teclasNormales: [new Image(), new Image(), new Image(), new Image()],
+    teclasPresionadas: [new Image(), new Image(), new Image(), new Image()]
+};
+
+const nombresArchivosNotas = ['left.png', 'down.png', 'up.png', 'right.png'];
+const nombresArchivosTeclas = ['k_left.png', 'k_down.png', 'k_up.png', 'k_right.png'];
+const nombresArchivosTeclasKD = ['kd_left.png', 'kd_down.png', 'kd_up.png', 'kd_right.png'];
+
+for (let i = 0; i < CANTIDAD_TECLAS; i++) {
+    imagenesSkin.notas[i].src = BASE_SKIN_URL + nombresArchivosNotas[i];
+    imagenesSkin.teclasNormales[i].src = BASE_SKIN_URL + nombresArchivosTeclas[i];
+    imagenesSkin.teclasPresionadas[i].src = BASE_SKIN_URL + nombresArchivosTeclasKD[i];
+}
 
 let listaNotas = [];
 let audio = null;
@@ -77,17 +96,37 @@ function gameLoop() {
 
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
+    // 1. Dibujar carriles y receptores inferiores circulares
     for (let i = 0; i < CANTIDAD_TECLAS; i++) {
-        ctx.fillStyle = teclasPresionadas[i] ? "rgba(255, 255, 255, 0.12)" : "#000";
-        ctx.fillRect(i * ANCHO_CARRIL, 0, ANCHO_CARRIL, canvas.height);
+        if (teclasPresionadas[i]) {
+            ctx.fillStyle = "rgba(255, 255, 255, 0.08)";
+            ctx.fillRect(i * ANCHO_CARRIL, 0, ANCHO_CARRIL, canvas.height);
+        }
 
         ctx.strokeStyle = "#2a2a2a";
         ctx.lineWidth = 2;
         ctx.strokeRect(i * ANCHO_CARRIL, 0, ANCHO_CARRIL, canvas.height);
+
+        const imgTeclas = teclasPresionadas[i] 
+            ? imagenesSkin.teclasPresionadas[i] 
+            : imagenesSkin.teclasNormales[i];
+
+        // Tamaño cuadrado perfecto para que el receptor sea circular
+        const margenTecla = 6;
+        const tamTecla = ANCHO_CARRIL - (margenTecla * 2);
+
+        ctx.drawImage(
+            imgTeclas, 
+            i * ANCHO_CARRIL + margenTecla, 
+            LINEA_JUICIO_Y - (tamTecla / 2), 
+            tamTecla, 
+            tamTecla
+        );
     }
 
-    ctx.strokeStyle = "#ff0055";
-    ctx.lineWidth = 4;
+    // Línea de guía de juicio
+    ctx.strokeStyle = "rgba(255, 0, 85, 0.6)";
+    ctx.lineWidth = 3;
     ctx.beginPath();
     ctx.moveTo(0, LINEA_JUICIO_Y);
     ctx.lineTo(canvas.width, LINEA_JUICIO_Y);
@@ -95,7 +134,13 @@ function gameLoop() {
 
     const tiempoActualMs = audio.currentTime * 1000;
 
+    // 2. Dibujar notas y cuerpos celestes
     for (let nota of listaNotas) {
+        const imgNota = imagenesSkin.notas[nota.columna];
+        
+        const margenNota = 6;
+        const tamNota = ANCHO_CARRIL - (margenNota * 2);
+
         if (nota.esHold) {
             if (tiempoActualMs > nota.endTime) continue;
 
@@ -105,21 +150,23 @@ function gameLoop() {
             const tiempoRestanteTail = nota.endTime - tiempoActualMs;
             const posYTail = LINEA_JUICIO_Y - (tiempoRestanteTail * VELOCIDAD_CAIDA);
 
-            ctx.fillStyle = nota.headHit ? "rgba(0, 255, 204, 0.5)" : "rgba(0, 255, 204, 0.25)";
+            // Todos los cuerpos son celestes
+            ctx.fillStyle = "rgba(0, 255, 204, 0.4)";
             ctx.fillRect(
-                nota.columna * ANCHO_CARRIL + 8,
+                nota.columna * ANCHO_CARRIL + margenNota + 6,
                 posYTail,
-                ANCHO_CARRIL - 16,
-                Math.max(10, posYHead - posYTail)
+                tamNota - 12,
+                Math.max(5, posYHead - posYTail)
             );
 
-            if (posYHead > -50 && posYHead < canvas.height + 50) {
-                ctx.fillStyle = "#00ffcc";
-                ctx.fillRect(
-                    nota.columna * ANCHO_CARRIL + 5,
-                    posYHead - 10,
-                    ANCHO_CARRIL - 10,
-                    20
+            // Cabeza circular
+            if (posYHead > -100 && posYHead < canvas.height + 100) {
+                ctx.drawImage(
+                    imgNota, 
+                    nota.columna * ANCHO_CARRIL + margenNota, 
+                    posYHead - (tamNota / 2), 
+                    tamNota, 
+                    tamNota
                 );
             }
 
@@ -129,13 +176,13 @@ function gameLoop() {
             const tiempoRestante = nota.time - tiempoActualMs;
             const posY = LINEA_JUICIO_Y - (tiempoRestante * VELOCIDAD_CAIDA);
 
-            if (posY > -50 && posY < canvas.height + 50) {
-                ctx.fillStyle = "#ffaa00";
-                ctx.fillRect(
-                    nota.columna * ANCHO_CARRIL + 5,
-                    posY - 10,
-                    ANCHO_CARRIL - 10,
-                    20
+            if (posY > -100 && posY < canvas.height + 100) {
+                ctx.drawImage(
+                    imgNota, 
+                    nota.columna * ANCHO_CARRIL + margenNota, 
+                    posY - (tamNota / 2), 
+                    tamNota, 
+                    tamNota
                 );
             }
         }
@@ -144,6 +191,7 @@ function gameLoop() {
     requestAnimationFrame(gameLoop);
 }
 
+// --- MANEJO DE TECLADO ---
 window.addEventListener('keydown', (e) => {
     if (e.repeat) return;
     if (MAPEO_TECLAS.hasOwnProperty(e.code)) {
@@ -192,6 +240,9 @@ document.getElementById('btnPlay').addEventListener('click', async () => {
         audio.play();
 
         juegoIniciado = true;
+        
+        // Bloquear el slider para evitar bugs de velocidad durante la partida
+        speedRange.disabled = true;
         document.getElementById('btnPlay').style.display = 'none';
 
         gameLoop();
