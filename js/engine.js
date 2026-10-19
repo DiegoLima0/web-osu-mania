@@ -17,10 +17,9 @@ export function windows(od) {
   return { max: 16, 300: 64 - d, 200: 97 - d, 100: 127 - d, 50: 151 - d, miss: 188 - d };
 }
 
-// Nota normal. delta = tiempoActual - tiempoNota. Tarde más allá de la ventana "100" = miss.
+// Nota normal. delta = tiempoActual - tiempoNota.
 export function judgeTap(delta, w) {
   const a = Math.abs(delta);
-  if (delta > 0 && a > w[100]) return 'miss';
   for (const g of GRADES.slice(0, 5)) if (a <= w[g]) return g;
   return 'miss';
 }
@@ -72,7 +71,7 @@ export class Engine {
 
   expire(col, t) {
     let n;
-    while ((n = this.advance(col)) && t - n.time > this.w[100]) {
+    while ((n = this.advance(col)) && t - n.time > this.w[50]) {
       n.head = 'miss';
       if (n.isLN) { n.broken = true; this.pending.push(n); }
       else { n.done = true; this.record('miss', t); }
@@ -112,8 +111,9 @@ export class Engine {
     this.holdingNote[col] = null; n.holding = false;
     const early = n.end - t;
     if (early > this.w[50]) { n.broken = true; this.pending.push(n); return false; } // soltada en el cuerpo
-    if (-early > this.w[100]) { n.broken = true; n.done = true; this.record('miss', t); return false; }
-    const g = judgeHold(n.h, Math.abs(early), this.w);
+    // En osu!mania ScoreV1 soltar después del final no penaliza con miss
+    const tailErr = early < 0 ? 0 : early;
+    const g = judgeHold(n.h, tailErr, this.w);
     n.done = true; this.record(g, t);
     return true;
   }
@@ -122,8 +122,10 @@ export class Engine {
     for (let c = 0; c < this.keys; c++) {
       this.expire(c, t);
       const h = this.holdingNote[c];
-      if (h && t - h.end > this.w[100]) { // mantenida demasiado tiempo: release tardío = miss
-        this.holdingNote[c] = null; h.holding = false; h.broken = true; h.done = true; this.record('miss', t);
+      if (h && t - h.end > this.w[50]) { // mantenida hasta el final: completa la nota con éxito (como osu!mania)
+        this.holdingNote[c] = null; h.holding = false;
+        const g = judgeHold(h.h, 0, this.w);
+        h.done = true; this.record(g, t);
       }
     }
     this.touchPending(t);

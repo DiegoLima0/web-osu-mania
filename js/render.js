@@ -31,19 +31,35 @@ function cropBox(img) {
 }
 
 export function layout(W, H, set) {
-  const laneW = Math.min(H * 0.15, W * 0.13);
+  // Escalado estándar de osu!mania (base 480p de altura)
+  const scale = H / 480;
+  // Ancho de columna en skin.ini: ColumnWidth: 70
+  const laneW = Math.round(70 * scale);
+  // ColumnSpacing: 2
+  const colGap = Math.max(1, Math.round(2 * scale));
+  const fieldW = laneW * 4 + colGap * 3;
+
+  // En osu!mania 16:9 widescreen, ColumnStart es 300 en resolución 480p
+  const base16_9W = (H * 16) / 9;
+  const stageOffset = Math.round((W - base16_9W) / 2 + 300 * scale);
+  const centeredX = Math.round((W - fieldW) / 2);
+  // Usar stageOffset de osu!mania si cabe cómodamente en pantalla
+  const x0 = (W >= fieldW + 80 && Math.abs(stageOffset - centeredX) < 60) ? stageOffset : centeredX;
+
   const down = set.scroll === 'down';
-  const hitY = down ? H * 0.86 : H * 0.14;
+  // HitPosition en skin.ini: 456. Centro visual de receptores: ~424 (y = 509 en 576p)
+  const hitY = down ? Math.round(424 * scale) : Math.round((480 - 424) * scale);
   const dir = down ? 1 : -1;
   const dist = down ? hitY : H - hitY;
-  return { W, H, laneW, fieldW: laneW * 4, x0: (W - laneW * 4) / 2, hitY, dir, pxPerMs: (dist * set.speed) / SCROLL_CONST, size: laneW * 0.94 };
+  const size = Math.round(laneW * 0.95);
+  return { W, H, scale, laneW, colGap, fieldW, x0, hitY, dir, pxPerMs: (dist * set.speed) / SCROLL_CONST, size };
 }
 
 const yAt = (L, time, t) => L.hitY - L.dir * (time - t) * L.pxPerMs;
-const cx = (L, col) => L.x0 + col * L.laneW + L.laneW / 2;
+const cx = (L, col) => L.x0 + col * (L.laneW + (L.colGap || 0)) + L.laneW / 2;
 
 function drawNote(ctx, L, skin, n, t) {
-  const x = cx(L, n.col), r = L.size * 0.4, bodyW = L.size * 0.8;
+  const x = cx(L, n.col), r = L.size * 0.4, bodyW = L.size * 0.82;
   const failed = n.broken || n.head === 'miss';
   if (!n.isLN) {
     if (n.done && !failed) return;
@@ -73,16 +89,31 @@ function drawNote(ctx, L, skin, n, t) {
 }
 
 function drawField(ctx, L, skin, set, pressed) {
-  ctx.fillStyle = `rgba(18,20,24,${set.fieldOpacity / 100})`;
-  ctx.fillRect(L.x0, 0, L.fieldW, L.H);
-  for (let i = 0; i <= 4; i++) {
-    ctx.fillStyle = 'rgba(255,255,255,0.22)';
-    ctx.fillRect(L.x0 + i * L.laneW - 1, 0, 2, L.H);
+  // Fondo oscuro del campo de juego (estilo osu!mania)
+  ctx.fillStyle = `rgba(12, 14, 18, ${set.fieldOpacity / 100})`;
+  ctx.fillRect(L.x0 - 2, 0, L.fieldW + 4, L.H);
+
+  // Bordes laterales del campo
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.28)';
+  ctx.fillRect(L.x0 - 2, 0, 2, L.H);
+  ctx.fillRect(L.x0 + L.fieldW, 0, 2, L.H);
+
+  // Líneas divisorias sutiles entre carriles
+  const gap = L.colGap || 0;
+  for (let i = 1; i < 4; i++) {
+    const lx = L.x0 + i * (L.laneW + gap) - gap / 2;
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.12)';
+    ctx.fillRect(lx - 0.5, 0, 1, L.H);
   }
+
+  // Efecto de iluminación de pulsación de carril
   for (let i = 0; i < 4; i++) if (pressed[i]) {
-    const g = ctx.createLinearGradient(0, L.hitY - L.dir * L.H * 0.5, 0, L.hitY + L.dir * L.size);
-    g.addColorStop(0, 'rgba(255,255,255,0)'); g.addColorStop(1, 'rgba(255,255,255,0.18)');
-    ctx.fillStyle = g; ctx.fillRect(L.x0 + i * L.laneW, 0, L.laneW, L.H);
+    const lx = L.x0 + i * (L.laneW + gap);
+    const g = ctx.createLinearGradient(0, L.hitY - L.dir * L.H * 0.45, 0, L.hitY + L.dir * L.size);
+    g.addColorStop(0, 'rgba(255, 255, 255, 0)');
+    g.addColorStop(1, 'rgba(255, 255, 255, 0.22)');
+    ctx.fillStyle = g;
+    ctx.fillRect(lx, 0, L.laneW, L.H);
   }
 }
 
@@ -92,7 +123,7 @@ function drawReceptors(ctx, L, skin, pressed) {
     if (!img.complete || !img.naturalWidth) continue;
     const c = skin.crop.get(img);
     const s = L.size;
-    if (c) ctx.drawImage(img, c.sx, c.sy, c.sw, c.sh, cx(L, i) - s / 2, L.hitY - s / 2, s, s); // cuadrado = círculo perfecto
+    if (c) ctx.drawImage(img, c.sx, c.sy, c.sw, c.sh, cx(L, i) - s / 2, L.hitY - s / 2, s, s);
     else ctx.drawImage(img, cx(L, i) - s / 2, L.hitY - s / 2, s, s);
   }
 }
@@ -114,24 +145,53 @@ export function draw(ctx, S) {
 
 function drawHud(ctx, L, engine, t) {
   const st = engine.stats();
-  ctx.textAlign = 'right'; ctx.fillStyle = '#fff'; ctx.font = '700 38px monospace';
-  ctx.fillText(String(st.score).padStart(7, '0'), L.W - 28, 52);
-  ctx.font = '600 20px monospace'; ctx.fillStyle = '#ddd';
-  ctx.fillText(st.liveAcc.toFixed(2) + '%', L.W - 28, 82);
-  ctx.fillStyle = 'rgba(255,255,255,0.7)';
+  const scale = L.scale || (L.H / 480);
+
+  // Puntuación y porcentaje colocados abajo, a la izquierda del campo (para no interferir con las notas)
+  const hudX = L.x0 - 20;
+  const hudY = L.hitY - 14;
+
+  ctx.save();
+  ctx.textAlign = 'right';
+  ctx.shadowColor = 'rgba(0, 0, 0, 0.85)';
+  ctx.shadowBlur = 6;
+
+  // Puntuación
+  const scoreFontSize = Math.round(30 * Math.max(0.75, scale));
+  ctx.font = `700 ${scoreFontSize}px monospace`;
+  ctx.fillStyle = '#ffffff';
+  ctx.fillText(String(st.score).padStart(7, '0'), hudX, hudY);
+
+  // Porcentaje / Precisión
+  const accFontSize = Math.round(19 * Math.max(0.75, scale));
+  ctx.font = `600 ${accFontSize}px monospace`;
+  ctx.fillStyle = '#9ff3ff';
+  ctx.fillText(st.liveAcc.toFixed(2) + '%', hudX, hudY + Math.round(26 * Math.max(0.75, scale)));
+  ctx.restore();
+
+  // Barra de progreso de la canción en la parte superior
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
   ctx.fillRect(0, 0, L.W * Math.min(1, Math.max(0, t / engine.lastTime)), 3);
+
+  // Combo y juicio centrados sobre la pista (igual que en osu!mania)
+  const stageCenter = L.x0 + L.fieldW / 2;
   ctx.textAlign = 'center';
   if (engine.combo > 1) {
-    ctx.font = '700 54px monospace'; ctx.fillStyle = '#fff';
-    ctx.shadowColor = 'rgba(0,0,0,0.6)'; ctx.shadowBlur = 8;
-    ctx.fillText(engine.combo, L.W / 2, L.H * 0.3);
+    ctx.font = `700 ${Math.round(48 * scale)}px monospace`;
+    ctx.fillStyle = '#fff';
+    ctx.shadowColor = 'rgba(0,0,0,0.7)';
+    ctx.shadowBlur = 8;
+    // ComboPosition: 130 en base 480
+    ctx.fillText(engine.combo, stageCenter, Math.round(155 * scale));
     ctx.shadowBlur = 0;
   }
   const j = engine.last;
   if (j && t - j.t < 450 && t - j.t >= 0) {
     ctx.globalAlpha = 1 - (t - j.t) / 450;
-    ctx.font = '700 28px monospace'; ctx.fillStyle = GRADE_COLORS[j.grade];
-    ctx.fillText(j.grade === 'max' ? '300' : j.grade === 'miss' ? 'MISS' : j.grade, L.W / 2, L.H * 0.3 + 44);
+    ctx.font = `700 ${Math.round(26 * scale)}px monospace`;
+    ctx.fillStyle = GRADE_COLORS[j.grade];
+    // ScorePosition: 170 en base 480
+    ctx.fillText(j.grade === 'max' ? '300' : j.grade === 'miss' ? 'MISS' : j.grade, stageCenter, Math.round(195 * scale));
     ctx.globalAlpha = 1;
   }
 }
