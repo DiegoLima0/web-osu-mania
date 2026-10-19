@@ -54,3 +54,7 @@ button.ghost:hover { background: #3a3d47; }
 .diff.active { border-color: var(--accent); background: #2a1520; }
 #info-meta { margin-bottom: 0; } .panel h4 { text-align: left; }
 .panel.center h4 { margin-top: 14px; }
+#panel-pause { width: min(330px, 92vw); max-height: 90vh; overflow-y: auto; text-align: left; }
+#panel-pause h2 { text-align: center; }
+#pause-settings { margin: 12px 0 6px; }
+

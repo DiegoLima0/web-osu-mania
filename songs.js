@@ -29,4 +29,18 @@ export const SONGS = [
       "Shigure Ui - Wishing Umbrella (Gsuncraft) [AelSan's Umbrella and You Daisuki].osu",
     ],
   },
+  {
+    id: 'smallest violin',
+    folder: 'AJR - Smallest Violin',
+    title: 'Smallest Violin',
+    artist: 'AJR',
+    mapper: 'Carpihat',
+    audio: 'audio.mp3',
+    background: 'background.jpg',
+    hitsound: 'soft-hitnormal.wav',
+    charts: [
+      'YuEasts Hard.osu',
+      "Magnificent World of the Violin.osu",
+    ],
+  },
 ];

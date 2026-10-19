@@ -9,6 +9,14 @@ export function loadSkin(base = 'skin/') {
     notes: dirs.map((d) => load(`${d}.png`)),
     key: dirs.map((d) => load(`k_${d}.png`)),
     keyDown: dirs.map((d) => load(`kd_${d}.png`)),
+    judgments: {
+      max: load('perfect.png'),
+      300: load('excellent.png'),
+      200: load('great.png'),
+      100: load('good.png'),
+      50: load('bad.png'),
+      miss: load('miss.png'),
+    },
     crop: new Map(),
   };
   // Las imágenes de tecla tienen espacio transparente: se recorta a la parte visible
@@ -129,7 +137,7 @@ function drawReceptors(ctx, L, skin, pressed) {
 }
 
 export function draw(ctx, S) {
-  const { L, skin, set, pressed, engine, t, mode } = S;
+  const { L, skin, set, pressed, engine, t, mode, speedToast } = S;
   ctx.clearRect(0, 0, L.W, L.H);
   drawField(ctx, L, skin, set, pressed);
   if (mode === 'preview') {
@@ -140,10 +148,39 @@ export function draw(ctx, S) {
     for (const n of engine.notes) drawNote(ctx, L, skin, n, t);
   }
   drawReceptors(ctx, L, skin, pressed);
-  if (mode === 'play' && engine) drawHud(ctx, L, engine, t);
+  if (mode === 'play' && engine) drawHud(ctx, L, engine, t, skin, set, speedToast);
+  else if (speedToast) drawSpeedToast(ctx, L, speedToast);
 }
 
-function drawHud(ctx, L, engine, t) {
+function drawSpeedToast(ctx, L, speedToast) {
+  if (!speedToast || performance.now() - speedToast.time >= 1200) return;
+  const dt = performance.now() - speedToast.time;
+  const alpha = dt < 900 ? 1 : (1200 - dt) / 300;
+  ctx.save();
+  ctx.globalAlpha = Math.max(0, Math.min(1, alpha));
+  const tw = 160, th = 38, tx = (L.W - tw) / 2, ty = Math.round(L.H * 0.12);
+  ctx.fillStyle = 'rgba(15, 17, 23, 0.88)';
+  ctx.strokeStyle = '#00ffcc';
+  ctx.lineWidth = 1.5;
+  if (ctx.roundRect) {
+    ctx.beginPath();
+    ctx.roundRect(tx, ty, tw, th, 8);
+    ctx.fill();
+    ctx.stroke();
+  } else {
+    ctx.fillRect(tx, ty, tw, th);
+    ctx.strokeRect(tx, ty, tw, th);
+  }
+  ctx.font = '700 15px monospace';
+  ctx.fillStyle = '#00ffcc';
+  ctx.textAlign = 'center';
+  ctx.shadowColor = 'rgba(0,0,0,0.6)';
+  ctx.shadowBlur = 4;
+  ctx.fillText(`Velocidad: ${speedToast.speed}`, L.W / 2, ty + 24);
+  ctx.restore();
+}
+
+function drawHud(ctx, L, engine, t, skin, set, speedToast) {
   const st = engine.stats();
   const scale = L.scale || (L.H / 480);
 
@@ -176,24 +213,42 @@ function drawHud(ctx, L, engine, t) {
   // Combo y juicio centrados sobre la pista (igual que en osu!mania)
   const stageCenter = L.x0 + L.fieldW / 2;
   ctx.textAlign = 'center';
+
+  // Combo más pequeño según lo solicitado
   if (engine.combo > 1) {
-    ctx.font = `700 ${Math.round(48 * scale)}px monospace`;
-    ctx.fillStyle = '#fff';
+    const comboSize = Math.round(24 * scale);
+    ctx.font = `700 ${comboSize}px monospace`;
+    ctx.fillStyle = '#ffffff';
     ctx.shadowColor = 'rgba(0,0,0,0.7)';
-    ctx.shadowBlur = 8;
+    ctx.shadowBlur = 6;
     // ComboPosition: 130 en base 480
     ctx.fillText(engine.combo, stageCenter, Math.round(155 * scale));
     ctx.shadowBlur = 0;
   }
+
+  // Juicio por cada nota (con imágenes de la skin y tamaño más pequeño)
   const j = engine.last;
   if (j && t - j.t < 450 && t - j.t >= 0) {
-    ctx.globalAlpha = 1 - (t - j.t) / 450;
-    ctx.font = `700 ${Math.round(26 * scale)}px monospace`;
-    ctx.fillStyle = GRADE_COLORS[j.grade];
-    // ScorePosition: 170 en base 480
-    ctx.fillText(j.grade === 'max' ? '300' : j.grade === 'miss' ? 'MISS' : j.grade, stageCenter, Math.round(195 * scale));
+    const age = t - j.t;
+    ctx.globalAlpha = 1 - age / 450;
+    const jY = Math.round(195 * scale); // ScorePosition
+    const img = skin && skin.judgments ? skin.judgments[j.grade] : null;
+
+    if (img && img.complete && img.naturalWidth) {
+      // Tamaño más pequeño como pidió el usuario: 54 * scale de ancho (ratio 256x192 = 4:3)
+      const jw = Math.round(54 * scale);
+      const jh = Math.round(jw * (img.naturalHeight / img.naturalWidth));
+      ctx.drawImage(img, stageCenter - jw / 2, jY - jh / 2, jw, jh);
+    } else {
+      ctx.font = `700 ${Math.round(20 * scale)}px monospace`;
+      ctx.fillStyle = GRADE_COLORS[j.grade];
+      ctx.fillText(j.grade === 'max' ? '300' : j.grade === 'miss' ? 'MISS' : j.grade, stageCenter, jY);
+    }
     ctx.globalAlpha = 1;
   }
+
+  // Aviso de cambio de velocidad con F3/F4
+  if (speedToast) drawSpeedToast(ctx, L, speedToast);
 }
 
 // Notas de demostración (patrón en bucle)

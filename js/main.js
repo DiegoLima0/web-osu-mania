@@ -153,14 +153,39 @@ const ROWS = [
   { id: 'fieldOpacity', label: 'Opacidad del campo', min: 0, max: 100, step: 1, unit: '%' },
   { id: 'offset', label: 'Offset (+ = notas antes)', min: -150, max: 150, step: 1, unit: ' ms' },
 ];
-for (const r of ROWS) {
+
+const PAUSE_ROWS = [
+  { id: 'musicVol', label: 'Volumen música', min: 0, max: 100, step: 1, unit: '%' },
+  { id: 'sfxVol', label: 'Volumen golpes', min: 0, max: 100, step: 1, unit: '%' },
+  { id: 'bgDim', label: 'Oscurecer fondo', min: 0, max: 100, step: 1, unit: '%' },
+  { id: 'fieldOpacity', label: 'Opacidad del campo', min: 0, max: 100, step: 1, unit: '%' },
+];
+
+const settingSyncs = new Map();
+
+function bindSettingRow(r, container) {
   const row = document.createElement('div'); row.className = 'row';
   row.innerHTML = `<label>${r.label}<output></output></label><input type="range" autocomplete="off" min="${r.min}" max="${r.max}" step="${r.step}">`;
   const input = row.querySelector('input'), out = row.querySelector('output');
-  const sync = () => { out.textContent = set[r.id] + (r.unit || ''); };
-  input.value = set[r.id]; sync();                       // el valor siempre sale de los ajustes guardados
-  input.oninput = () => { set[r.id] = +input.value; sync(); saveSettings(set); applyVisuals(); input.blur(); };
-  $('settings-rows').append(row);
+  const sync = () => { out.textContent = set[r.id] + (r.unit || ''); input.value = set[r.id]; };
+  sync();
+  if (!settingSyncs.has(r.id)) settingSyncs.set(r.id, []);
+  settingSyncs.get(r.id).push(sync);
+
+  input.oninput = () => {
+    set[r.id] = +input.value;
+    saveSettings(set);
+    applyVisuals();
+    (settingSyncs.get(r.id) || []).forEach((fn) => fn());
+    input.blur();
+  };
+  container.append(row);
+}
+
+for (const r of ROWS) bindSettingRow(r, $('settings-rows'));
+const pauseSettingsEl = $('pause-settings');
+if (pauseSettingsEl) {
+  for (const r of PAUSE_ROWS) bindSettingRow(r, pauseSettingsEl);
 }
 {
   const row = document.createElement('div'); row.className = 'row check'; row.id = 'row-video'; row.hidden = true;
@@ -249,6 +274,15 @@ $('btn-quit').onclick = () => { stopAudio(); engine = null; enterReady(); };
 $('btn-again').onclick = () => { engine = null; enterReady(); };
 $('btn-songs').onclick = () => { engine = null; stopVideo(); show('select'); };
 
+// ---------- Velocidad con F3 / F4 (como osu!mania) ----------
+let speedToast = null;
+function changeSpeed(delta) {
+  set.speed = Math.min(40, Math.max(1, set.speed + delta));
+  saveSettings(set);
+  speedToast = { time: performance.now(), speed: set.speed };
+  (settingSyncs.get('speed') || []).forEach((fn) => fn());
+}
+
 // ---------- Teclado ----------
 window.addEventListener('keydown', (e) => {
   if (rebinding >= 0) {
@@ -259,6 +293,8 @@ window.addEventListener('keydown', (e) => {
     }
     rebinding = -1; renderKeys(); return;
   }
+  if (e.code === 'F3') { e.preventDefault(); changeSpeed(-1); return; }
+  if (e.code === 'F4') { e.preventDefault(); changeSpeed(1); return; }
   if (e.code === 'Escape') { e.preventDefault(); screen === 'playing' ? pause() : screen === 'paused' ? resume() : screen === 'ready' && $('btn-back').click(); return; }
   const col = set.keys.indexOf(e.code);
   if (col < 0) return;
@@ -292,14 +328,14 @@ function frame() {
     syncVideo(rawTime());
     const t = songTime();
     engine.update(t);
-    draw(ctx, { L, skin, set, pressed, engine, t, mode: 'play' });
+    draw(ctx, { L, skin, set, pressed, engine, t, mode: 'play', speedToast });
     if (engine.isFinished(t)) endGame();
   } else if (screen === 'paused' && engine) {
-    draw(ctx, { L, skin, set, pressed, engine, t: songTime(pausedAt), mode: 'play' });
+    draw(ctx, { L, skin, set, pressed, engine, t: songTime(pausedAt), mode: 'play', speedToast });
   } else if (screen === 'ready') {
-    draw(ctx, { L, skin, set, pressed, demo, mode: 'preview' });
+    draw(ctx, { L, skin, set, pressed, demo, mode: 'preview', speedToast });
   } else if (screen === 'results' && engine) {
-    draw(ctx, { L, skin, set, pressed, engine, t: engine.lastTime + 1, mode: 'field' });
+    draw(ctx, { L, skin, set, pressed, engine, t: engine.lastTime + 1, mode: 'field', speedToast });
   } else ctx.clearRect(0, 0, L.W, L.H);
   requestAnimationFrame(frame);
 }
