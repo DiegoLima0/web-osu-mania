@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Osu Mania Web</title>
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -17,6 +18,12 @@
     <h1>Osu! Mania <small>4K</small></h1>
     <p class="hint">Elige una canción</p>
     <div id="song-list"></div>
+    <div id="preview-bar">
+      <button id="btn-prev-song" class="player-btn" title="Canción anterior">⏮</button>
+      <button id="btn-toggle-preview" class="player-btn" title="Pausar / Reanudar">⏸</button>
+      <button id="btn-next-song" class="player-btn" title="Canción siguiente">⏭</button>
+      <span id="preview-title">Selecciona una canción</span>
+    </div>
   </section>
 
   <!-- 2. Canción elegida: ajustes + jugar -->

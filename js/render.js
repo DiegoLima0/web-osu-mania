@@ -67,7 +67,7 @@ const yAt = (L, time, t) => L.hitY - L.dir * (time - t) * L.pxPerMs;
 const cx = (L, col) => L.x0 + col * (L.laneW + (L.colGap || 0)) + L.laneW / 2;
 
 function drawNote(ctx, L, skin, n, t) {
-  const x = cx(L, n.col), r = L.size * 0.4, bodyW = L.size * 0.82;
+  const x = cx(L, n.col), bodyW = Math.round(L.size * 0.82);
   const failed = n.broken || n.head === 'miss';
   if (!n.isLN) {
     if (n.done && !failed) return;
@@ -80,20 +80,47 @@ function drawNote(ctx, L, skin, n, t) {
   }
   if (n.done && !failed) return; // nota larga completada: desaparece
   const yTail = yAt(L, n.end, t);
-  // Mientras se mantiene bien, la cabeza queda en la línea de juicio y nunca la pasa
-  const yHead = n.holding ? L.hitY : yAt(L, n.time, t);
-  const lo = Math.min(yHead, yTail), hi = Math.max(yHead, yTail);
-  if (hi < -L.size || lo > L.H + L.size) return;
-  ctx.globalAlpha = failed ? 0.35 : 1;
-  // cuerpo blanco con punta redondeada en el extremo final
-  const capY = yTail + L.dir * r;
-  ctx.fillStyle = 'rgba(255,255,255,0.92)';
-  ctx.beginPath(); // una sola ruta: evita costuras al ser semitransparente
-  ctx.arc(x, capY, bodyW / 2, 0, Math.PI * 2);
-  ctx.rect(x - bodyW / 2, Math.min(capY, yHead), bodyW, Math.abs(yHead - capY));
-  ctx.fill();
-  ctx.drawImage(skin.notes[n.col], x - L.size / 2, yHead - L.size / 2, L.size, L.size);
-  ctx.globalAlpha = 1;
+  const yHead = yAt(L, n.time, t);
+
+  if (L.dir === 1) { // Caída hacia abajo (Downscroll)
+    // Si la cola ya llegó o pasó la línea de juicio, la nota terminó
+    if (yTail >= L.hitY) return;
+    // La base del cuerpo queda fija en L.hitY si se sostiene, y nunca sobrepasa L.hitY
+    const endY = n.holding ? L.hitY : Math.min(yHead, L.hitY);
+    const startY = yTail;
+    if (startY < endY) {
+      ctx.globalAlpha = failed ? 0.35 : 1;
+      ctx.fillStyle = 'rgba(255,255,255,0.92)';
+      ctx.beginPath();
+      ctx.arc(x, startY, bodyW / 2, Math.PI, 0); // casquete redondeado superior
+      ctx.lineTo(x + bodyW / 2, endY);
+      ctx.lineTo(x - bodyW / 2, endY);
+      ctx.closePath();
+      ctx.fill();
+    }
+    const headDrawY = n.holding ? L.hitY : endY;
+    ctx.globalAlpha = failed ? 0.35 : 1;
+    ctx.drawImage(skin.notes[n.col], x - L.size / 2, headDrawY - L.size / 2, L.size, L.size);
+    ctx.globalAlpha = 1;
+  } else { // Upscroll
+    if (yTail <= L.hitY) return;
+    const endY = n.holding ? L.hitY : Math.max(yHead, L.hitY);
+    const startY = yTail;
+    if (startY > endY) {
+      ctx.globalAlpha = failed ? 0.35 : 1;
+      ctx.fillStyle = 'rgba(255,255,255,0.92)';
+      ctx.beginPath();
+      ctx.arc(x, startY, bodyW / 2, 0, Math.PI);
+      ctx.lineTo(x - bodyW / 2, endY);
+      ctx.lineTo(x + bodyW / 2, endY);
+      ctx.closePath();
+      ctx.fill();
+    }
+    const headDrawY = n.holding ? L.hitY : endY;
+    ctx.globalAlpha = failed ? 0.35 : 1;
+    ctx.drawImage(skin.notes[n.col], x - L.size / 2, headDrawY - L.size / 2, L.size, L.size);
+    ctx.globalAlpha = 1;
+  }
 }
 
 function drawField(ctx, L, skin, set, pressed) {
@@ -214,37 +241,37 @@ function drawHud(ctx, L, engine, t, skin, set, speedToast) {
   const stageCenter = L.x0 + L.fieldW / 2;
   ctx.textAlign = 'center';
 
-  // Combo más pequeño según lo solicitado
-  if (engine.combo > 1) {
-    const comboSize = Math.round(24 * scale);
-    ctx.font = `700 ${comboSize}px monospace`;
-    ctx.fillStyle = '#ffffff';
-    ctx.shadowColor = 'rgba(0,0,0,0.7)';
-    ctx.shadowBlur = 6;
-    // ComboPosition: 130 en base 480
-    ctx.fillText(engine.combo, stageCenter, Math.round(155 * scale));
-    ctx.shadowBlur = 0;
-  }
-
-  // Juicio por cada nota (con imágenes de la skin y tamaño más pequeño)
+  // Juicio por cada nota (colocado ARRIBA del combo, tamaño grande y vistoso)
   const j = engine.last;
   if (j && t - j.t < 450 && t - j.t >= 0) {
     const age = t - j.t;
     ctx.globalAlpha = 1 - age / 450;
-    const jY = Math.round(195 * scale); // ScorePosition
+    const jY = Math.round(130 * scale); // Arriba del combo
     const img = skin && skin.judgments ? skin.judgments[j.grade] : null;
 
     if (img && img.complete && img.naturalWidth) {
-      // Tamaño más pequeño como pidió el usuario: 54 * scale de ancho (ratio 256x192 = 4:3)
-      const jw = Math.round(54 * scale);
+      // Agranda más las imágenes de puntuación como pidió el usuario: 105 * scale de ancho
+      const jw = Math.round(105 * scale);
       const jh = Math.round(jw * (img.naturalHeight / img.naturalWidth));
       ctx.drawImage(img, stageCenter - jw / 2, jY - jh / 2, jw, jh);
     } else {
-      ctx.font = `700 ${Math.round(20 * scale)}px monospace`;
+      ctx.font = `700 ${Math.round(28 * scale)}px monospace`;
       ctx.fillStyle = GRADE_COLORS[j.grade];
       ctx.fillText(j.grade === 'max' ? '300' : j.grade === 'miss' ? 'MISS' : j.grade, stageCenter, jY);
     }
     ctx.globalAlpha = 1;
+  }
+
+  // Combo (debajo del juicio, y más pequeño)
+  if (engine.combo > 1) {
+    const comboSize = Math.round(18 * scale);
+    ctx.font = `700 ${comboSize}px monospace`;
+    ctx.fillStyle = '#ffffff';
+    ctx.shadowColor = 'rgba(0,0,0,0.7)';
+    ctx.shadowBlur = 5;
+    // Debajo de la imagen del juicio
+    ctx.fillText(engine.combo, stageCenter, Math.round(190 * scale));
+    ctx.shadowBlur = 0;
   }
 
   // Aviso de cambio de velocidad con F3/F4

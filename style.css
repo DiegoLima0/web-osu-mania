@@ -6,21 +6,30 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #0e0e11; col
 #dim { position: fixed; inset: 0; background: #000; opacity: .6; pointer-events: none; }
 #game { position: fixed; inset: 0; width: 100%; height: 100%; }
 [hidden], .hidden { display: none !important; }
+body.playing, body.playing * { cursor: none !important; }
 
 .screen { position: fixed; inset: 0; display: flex; align-items: center; justify-content: space-between; padding: 0 3vw; pointer-events: none; }
 .screen > * { pointer-events: auto; }
 .overlay { justify-content: center; background: rgba(0,0,0,.55); }
-#screen-select { flex-direction: column; justify-content: center; gap: 8px; background: radial-gradient(circle at 50% 30%, #23242c, #0e0e11 70%); pointer-events: auto; }
-#screen-select h1 { margin: 0; color: var(--accent); font-size: 40px; }
+#screen-select { flex-direction: column; justify-content: center; gap: 6px; background: radial-gradient(circle at 50% 30%, #23242c, #0e0e11 70%); pointer-events: auto; }
+#screen-select h1 { margin: 0; color: var(--accent); font-size: 36px; }
 #screen-select h1 small { color: #aaa; font-size: 16px; }
-.hint { color: #999; margin: 0 0 12px; }
+.hint { color: #999; margin: 0 0 6px; }
 .hint.small { font-size: 12px; }
 
-#song-list { display: flex; flex-direction: column; gap: 10px; width: min(560px, 92vw); }
-.song { height: 96px; border: 1px solid var(--line); border-radius: 10px; padding: 14px 18px; text-align: left; color: #fff; cursor: pointer;
+#song-list { display: flex; flex-direction: column; gap: 8px; width: min(650px, 94vw); max-height: 72vh; overflow-y: auto; overflow-x: hidden; padding-right: 8px; }
+#song-list::-webkit-scrollbar { width: 6px; }
+#song-list::-webkit-scrollbar-thumb { background: #333; border-radius: 4px; }
+.song { width: 100%; height: 86px; border: 1px solid var(--line); border-radius: 10px; padding: 10px 16px; text-align: left; color: #fff; cursor: pointer;
   background: linear-gradient(90deg, rgba(0,0,0,.85), rgba(0,0,0,.35)), var(--bg) center / cover; transition: transform .15s, border-color .15s; font: inherit; }
-.song:hover { transform: translateX(8px); border-color: var(--accent); }
-.song b { font-size: 20px; display: block; } .song span { color: #bbb; font-size: 13px; }
+.song:hover, .song.selected { transform: translateX(6px); border-color: var(--accent); }
+.song b { font-size: 19px; display: block; line-height: 1.2; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.song span { color: #bbb; font-size: 12.5px; display: block; line-height: 1.35; }
+
+#preview-bar { display: flex; align-items: center; justify-content: center; gap: 10px; width: min(650px, 94vw); background: var(--panel); border: 1px solid var(--line); border-radius: 30px; padding: 6px 16px; margin-top: 4px; box-shadow: 0 4px 16px rgba(0,0,0,.5); }
+.player-btn { width: auto; margin: 0; padding: 6px 14px; border-radius: 20px; font-size: 15px; background: #1a1c22; border: 1px solid var(--line); color: #fff; cursor: pointer; transition: background .15s, border-color .15s; }
+.player-btn:hover { background: var(--accent); border-color: var(--accent); }
+#preview-title { font-size: 13px; color: #00ffcc; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 380px; }
 
 .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 20px; width: 270px; box-shadow: 0 6px 24px rgba(0,0,0,.5); }
 .panel.center { text-align: center; }
@@ -28,7 +37,8 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #0e0e11; col
 .panel h4 { margin: 18px 0 8px; color: #ccc; }
 .row { margin-bottom: 12px; font-size: 13px; }
 .row label { display: flex; justify-content: space-between; } .row output { color: #00ffcc; }
-input[type=range] { width: 100%; margin: 6px 0 0; accent-color: var(--accent); }
+input[type=range] { width: 100%; margin: 6px 0 0; accent-color: var(--accent); cursor: pointer; }
+input[type=range]:focus { outline: 2px solid #00ffcc; outline-offset: 2px; border-radius: 4px; }
 select { width: 100%; background: #111; color: #fff; border: 1px solid var(--line); padding: 6px; font: inherit; }
 #key-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
 #key-row button { padding: 10px 0; background: #111; border: 1px solid var(--line); color: #00ffcc; }

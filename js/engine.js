@@ -138,7 +138,7 @@ export class Engine {
     });
   }
 
-  isFinished(t) { return t > this.lastTime + 2000; }
+  isFinished(t) { return t > this.lastTime + 1000; }
 
   stats() {
     const total = this.total || 1;

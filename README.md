@@ -23,12 +23,46 @@ Sigue las reglas de osu!mania (ScoreV1): máximo 1.000.000 puntos (mitad base, m
 2. Añade una entrada en `songs.js` con sus dificultades (`charts`). Solo se admiten mapas **mania 4K**; los de otros modos se ignoran.
 3. La vista previa usa el `PreviewTime` del `.osu`, y el video (opcional) se sincroniza con su offset.
 
-## Créditos
+## Créditos de las canciones
 
-- **Canción:** "Houkago Mermaid" (放課後マーメイド) — Shigure Ui (しぐれうい).
-- **Mapa:** [beatmapset 2551742](https://osu.ppy.sh/beatmapsets/2551742#mania/5661343), dificultad "The Title is After School Mermaid", creado por **Ainer**.
-- **Canción:** "Wishing Umbrella" — Shigure Ui (しぐれうい). Mapa mania por **Gsuncraft** (dificultades Insane y AelSan's Umbrella and You Daisuki). Fondo y video: MV original.
-- **Skin:** Cirno-V2.0 — autor: _(completar con el nombre del creador de la skin)_.
-- **osu!** es un juego de ppy Pty Ltd. Este proyecto es un fan project sin afiliación oficial.
+1. **"Houkago Mermaid" (放課後マーメイド)**
+   - **Artista:** Shigure Ui (しぐれうい)
+   - **Mapeador:** [Ainer](https://osu.ppy.sh/beatmapsets/2551742#mania/5661343)
+   - **Dificultades:** The Title is After School Mermaid
+   - **Recursos:** MV original y audio oficial.
 
-La música, el mapa y la skin pertenecen a sus respectivos autores y se incluyen solo con fines de demostración/aprendizaje. Si algún autor pide retirarlos, se eliminarán.
+2. **"Wishing Umbrella"**
+   - **Artista:** Shigure Ui (しぐれうい)
+   - **Mapeador:** [Gsuncraft](https://osu.ppy.sh/beatmapsets/2563159#mania/5878157)
+   - **Dificultades:** Insane, AelSan's Umbrella and You Daisuki
+   - **Recursos:** Video musical original y fondo por Gsuncraft.
+
+3. **"World's Smallest Violin"**
+   - **Artista:** AJR
+   - **Mapeador:** [Carpihat](https://osu.ppy.sh/beatmapsets/2168512#mania/4575684)
+   - **Dificultades:** YuEast's Hard, Magnificent World of the Violin
+   - **Recursos:** Audio original y fondo Mr. Krabs.
+
+4. **"UNA ALARM"**
+   - **Artista:** Maro Note (feat. Otomachi Una)
+   - **Mapeador:** [Karin-](https://osu.ppy.sh/beatmapsets/2543663#mania/5633120)
+   - **Dificultades:** How to wake up (Advanced, Another, Hyper, Intermediate method)
+   - **Recursos:** Video oficial y audio.
+
+5. **"Static"**
+   - **Artista:** FLAVOR FOLEY
+   - **Mapeador:** [Monoseul](https://osu.ppy.sh/beatmapsets/2383590#mania/5153607)
+   - **Dificultades:** It's Easy!, It's Normal!, It's Johno's Hard!, It's Insane!, It's me!
+   - **Recursos:** Video y audio original.
+
+6. **"Idol" (アイドル)**
+   - **Artista:** YOASOBI
+   - **Mapeador:** [Akasha-](https://osu.ppy.sh/beatmapsets/1982752#mania/4117650)
+   - **Dificultades:** Easy, Normal, CS' Hard, CS' Insane, (L)ove (I)n (E)ternity
+   - **Recursos:** Video oficial (Oshi no Ko / Doga Kobo), fondos BG1 a BG5 por dificultad.
+
+## Créditos del juego y recursos
+
+- **Skin:** Cirno-V2.0 — autor: **Blulletgun** (elementos de juicio, combo y notas).
+- **osu!:** Propiedad de ppy Pty Ltd (Dean Herbert). Este proyecto es una recreación experimental web para la comunidad sin fines de lucro.
+- **Aviso legal y retiro de contenido:** La música, los videos, los mapas y las imágenes son propiedad intelectual de sus respectivos artistas y creadores, utilizándose aquí únicamente con fines de demostración y aprendizaje. Si eres el autor o titular de los derechos de cualquier contenido incluido aquí y deseas su retiro o modificación, por favor abre un *Issue* en este repositorio y se eliminará de inmediato.

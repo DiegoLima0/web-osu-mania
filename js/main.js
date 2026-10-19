@@ -22,11 +22,15 @@ const url = (s, f) => encodeURI(`${s.folder}/${f}`);
 // ---------- Pantallas ----------
 function show(name) {
   screen = name;
+  document.body.classList.toggle('playing', name === 'playing');
   for (const id of ['select', 'ready', 'pause', 'results']) {
     $('screen-' + id).classList.toggle('hidden', !(id === name || (id === 'pause' && name === 'paused')));
   }
   $('bg').style.opacity = name === 'select' ? 0 : 1;
   $('dim').style.display = name === 'select' ? 'none' : 'block';
+  if (name === 'select' && typeof selectSongPreview === 'function') {
+    selectSongPreview(selectedSongIdx, false);
+  }
 }
 
 function applyVisuals() {
@@ -39,27 +43,71 @@ const getAudio = (s) => {
   if (!audios.has(s.id)) { const a = new Audio(url(s, s.audio)); a.preload = 'auto'; audios.set(s.id, a); }
   return audios.get(s.id);
 };
-// Solo se cargan las dificultades de mania 4K (se ignoran otros modos)
+// Solo se cargan las dificultades de mania 4K (se ignoran otros modos) ordenadas por dificultad
 const loadCharts = (s) => {
   if (!chartCache.has(s.id)) {
     chartCache.set(s.id, Promise.all(s.charts.map(async (f) => {
       const map = parseOsu(await (await fetch(url(s, f))).text());
       return { file: f, ...map };
-    })).then((l) => l.filter((c) => c.meta.mode === 3 && c.keys === 4)));
+    })).then((l) => {
+      const filtered = l.filter((c) => c.meta.mode === 3 && c.keys === 4);
+      filtered.sort((a, b) => (a.notes.length * (a.od + 2)) - (b.notes.length * (b.od + 2)));
+      return filtered;
+    }));
   }
   return chartCache.get(s.id);
 };
 
-for (const s of SONGS) {
+let selectedSongIdx = 0;
+const songButtons = [];
+
+function selectSongPreview(idx, startAudio = true) {
+  if (!SONGS.length) return;
+  selectedSongIdx = (idx + SONGS.length) % SONGS.length;
+  songButtons.forEach((btn, i) => {
+    btn.classList.toggle('selected', i === selectedSongIdx);
+    if (i === selectedSongIdx) {
+      btn.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    }
+  });
+  const s = SONGS[selectedSongIdx];
+  const titleEl = $('preview-title');
+  if (titleEl) titleEl.textContent = `${s.title} - ${s.artist}`;
+  if (startAudio) startPreview(s);
+}
+
+function togglePreview() {
+  if (previewing && !previewing.paused) {
+    previewing.pause();
+    const btn = $('btn-toggle-preview');
+    if (btn) btn.textContent = '▶';
+  } else if (previewing && previewing.paused) {
+    previewing.play().catch(() => {});
+    const btn = $('btn-toggle-preview');
+    if (btn) btn.textContent = '⏸';
+  } else if (SONGS[selectedSongIdx]) {
+    startPreview(SONGS[selectedSongIdx]);
+  }
+}
+
+SONGS.forEach((s, i) => {
   const b = document.createElement('button');
   b.className = 'song';
   b.style.setProperty('--bg', `url("${url(s, s.background)}")`);
   b.innerHTML = `<b>${s.title}</b><span>${s.artist} · mapa de ${s.mapper}<br>${s.charts.length} dificultad${s.charts.length > 1 ? 'es' : ''} · 4K${s.video ? ' · video' : ''}</span>`;
-  b.onclick = () => openSong(s);
-  b.onmouseenter = () => { clearTimeout(hoverTimer); hoverTimer = setTimeout(() => startPreview(s), 250); };
+  b.onclick = () => { selectSongPreview(i, false); openSong(s); };
+  b.onmouseenter = () => {
+    clearTimeout(hoverTimer);
+    hoverTimer = setTimeout(() => selectSongPreview(i, true), 250);
+  };
   b.onmouseleave = () => clearTimeout(hoverTimer);
   $('song-list').append(b);
-}
+  songButtons.push(b);
+});
+
+if ($('btn-prev-song')) $('btn-prev-song').onclick = () => selectSongPreview(selectedSongIdx - 1);
+if ($('btn-next-song')) $('btn-next-song').onclick = () => selectSongPreview(selectedSongIdx + 1);
+if ($('btn-toggle-preview')) $('btn-toggle-preview').onclick = () => togglePreview();
 
 // Vista previa: suena desde PreviewTime (leído del .osu) hasta el final, y vuelve a ese punto
 async function startPreview(s) {
@@ -73,11 +121,35 @@ async function startPreview(s) {
   if (previewing === a && !a.paused) return;
   previewing = a; a.volume = set.musicVol / 100; a.currentTime = pt;
   a.onended = () => { if (previewing === a) { a.currentTime = pt; a.play().catch(() => {}); } };
-  a.play().catch(() => {}); // el navegador puede bloquearlo hasta el primer clic
+  const toggleBtn = $('btn-toggle-preview');
+  a.play().then(() => {
+    if (toggleBtn) toggleBtn.textContent = '⏸';
+  }).catch(() => {
+    if (toggleBtn) toggleBtn.textContent = '▶';
+  });
 }
 function stopPreview() {
   previewToken++; clearTimeout(hoverTimer);
   if (previewing) { previewing.onended = null; previewing.pause(); previewing = null; }
+  const toggleBtn = $('btn-toggle-preview');
+  if (toggleBtn) toggleBtn.textContent = '▶';
+}
+
+function updateBackground() {
+  if (!song) return;
+  const chart = charts[chartIdx];
+  const diffBg = chart?.meta?.background;
+  const defaultUrl = song.background ? url(song, song.background) : '';
+
+  if (diffBg) {
+    const targetUrl = url(song, diffBg);
+    const img = new Image();
+    img.onload = () => { $('bg').style.backgroundImage = `url("${targetUrl}")`; };
+    img.onerror = () => { if (defaultUrl) $('bg').style.backgroundImage = `url("${defaultUrl}")`; };
+    img.src = targetUrl;
+  } else if (defaultUrl) {
+    $('bg').style.backgroundImage = `url("${defaultUrl}")`;
+  }
 }
 
 async function openSong(s) {
@@ -93,7 +165,7 @@ async function openSong(s) {
 
 function enterReady() {
   show('ready'); stopVideo();
-  $('bg').style.backgroundImage = `url("${url(song, song.background)}")`;
+  updateBackground();
   $('info-title').textContent = song.title;
   $('info-meta').innerHTML = `${song.artist}<br>Mapa: ${song.mapper}`;
   renderDiffs(); syncVideoUI(); syncVideoSrc(); applyVisuals();
@@ -106,7 +178,7 @@ function renderDiffs() {
     const b = document.createElement('button');
     b.className = 'diff' + (i === chartIdx ? ' active' : '');
     b.innerHTML = `<b>${c.meta.version}</b><span>${c.notes.length} notas · ${c.lnCount} largas · OD ${c.od}</span>`;
-    b.onclick = () => { chartIdx = i; renderDiffs(); };
+    b.onclick = () => { chartIdx = i; updateBackground(); renderDiffs(); };
     $('diff-list').append(b);
   });
 }
@@ -177,7 +249,6 @@ function bindSettingRow(r, container) {
     saveSettings(set);
     applyVisuals();
     (settingSyncs.get(r.id) || []).forEach((fn) => fn());
-    input.blur();
   };
   container.append(row);
 }
@@ -253,7 +324,7 @@ async function startGame() {
 
 function stopAudio() { if (audio) { audio.pause(); audio.currentTime = 0; } stopVideo(); }
 function pause() { if (screen !== 'playing') return; pausedAt = performance.now(); audio.pause(); vid.pause(); show('paused'); }
-function resume() { if (screen !== 'paused') return; t0 += performance.now() - pausedAt; if (audioStarted) audio.play(); show('playing'); }
+function resume() { if (screen !== 'paused') return; if (document.activeElement?.blur) document.activeElement.blur(); t0 += performance.now() - pausedAt; if (audioStarted) audio.play(); show('playing'); }
 function endGame() {
   stopAudio(); const st = engine.stats();
   $('res-rank').textContent = st.rank;
@@ -266,7 +337,7 @@ function endGame() {
 }
 
 // ---------- Botones ----------
-$('btn-play').onclick = startGame;
+$('btn-play').onclick = () => { if (document.activeElement?.blur) document.activeElement.blur(); startGame(); };
 $('btn-back').onclick = () => { stopAudio(); stopPreview(); show('select'); };
 $('btn-resume').onclick = resume;
 $('btn-retry').onclick = () => { stopAudio(); startGame(); };
@@ -293,9 +364,39 @@ window.addEventListener('keydown', (e) => {
     }
     rebinding = -1; renderKeys(); return;
   }
+  if (screen === 'select') {
+    if (e.code === 'ArrowUp' || e.code === 'ArrowLeft') {
+      e.preventDefault(); selectSongPreview(selectedSongIdx - 1, true); return;
+    }
+    if (e.code === 'ArrowDown' || e.code === 'ArrowRight') {
+      e.preventDefault(); selectSongPreview(selectedSongIdx + 1, true); return;
+    }
+    if (e.code === 'Space') {
+      e.preventDefault(); togglePreview(); return;
+    }
+    if (e.code === 'Enter') {
+      e.preventDefault(); if (SONGS[selectedSongIdx]) openSong(SONGS[selectedSongIdx]); return;
+    }
+  }
   if (e.code === 'F3') { e.preventDefault(); changeSpeed(-1); return; }
   if (e.code === 'F4') { e.preventDefault(); changeSpeed(1); return; }
-  if (e.code === 'Escape') { e.preventDefault(); screen === 'playing' ? pause() : screen === 'paused' ? resume() : screen === 'ready' && $('btn-back').click(); return; }
+  if (e.code === 'Escape') {
+    e.preventDefault();
+    if (document.activeElement?.blur) document.activeElement.blur();
+    if (screen === 'playing') {
+      // Si la canción ya pasó sus notas o está terminando, saltar inmediatamente a resultados
+      if (engine && songTime() >= engine.lastTime - 300) endGame();
+      else pause();
+    } else if (screen === 'paused') {
+      resume();
+    } else if (screen === 'results') {
+      // En pantalla de resultados, Esc vuelve directo a seleccionar canción (como en osu!)
+      stopAudio(); engine = null; show('select');
+    } else if (screen === 'ready') {
+      $('btn-back').click();
+    }
+    return;
+  }
   const col = set.keys.indexOf(e.code);
   if (col < 0) return;
   e.preventDefault();

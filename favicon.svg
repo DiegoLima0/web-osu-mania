@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128">
+  <defs>
+    <radialGradient id="pinkGrad" cx="40%" cy="35%" r="65%">
+      <stop offset="0%" stop-color="#ff7eb3"/>
+      <stop offset="55%" stop-color="#e8387e"/>
+      <stop offset="100%" stop-color="#be1b5c"/>
+    </radialGradient>
+    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="3" stdDeviation="4" flood-color="#000000" flood-opacity="0.4"/>
+    </filter>
+  </defs>
+  <!-- Círculo principal rosa degradado con sombra -->
+  <circle cx="64" cy="64" r="58" fill="url(#pinkGrad)" filter="url(#glow)"/>
+  <!-- Aro interior blanco clásico de osu! -->
+  <circle cx="64" cy="64" r="49" fill="none" stroke="#ffffff" stroke-width="7" opacity="0.95"/>
+  <!-- Texto osu! en negrita centrado -->
+  <text x="64" y="75" fill="#ffffff" font-family="'Comfortaa', 'Arial Black', -apple-system, sans-serif" font-weight="900" font-size="33" text-anchor="middle" letter-spacing="-1.5">osu!</text>
+</svg>

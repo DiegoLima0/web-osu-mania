@@ -1,7 +1,7 @@
 // Lee un archivo .osu: notas, OD, teclas y metadatos (vista previa, video, nombre de dificultad).
 export function parseOsu(text) {
   let section = '', od = 5, keys = 4;
-  const meta = { mode: 0, previewTime: -1, title: '', artist: '', creator: '', version: '', video: null, videoOffset: 0 };
+  const meta = { mode: 0, previewTime: -1, title: '', artist: '', creator: '', version: '', video: null, videoOffset: 0, background: null };
   const raw = [];
   for (let line of text.split(/\r?\n/)) {
     line = line.trim();
@@ -22,7 +22,13 @@ export function parseOsu(text) {
       if (k === 'CircleSize') keys = parseFloat(v);
     } else if (section === '[Events]') {
       const p = line.split(',');
-      if (p[0] === 'Video' || p[0] === '1') { meta.video = (p[2] || '').replace(/"/g, ''); meta.videoOffset = parseInt(p[1]) || 0; }
+      if (p[0] === 'Video' || p[0] === '1') {
+        meta.video = (p[2] || '').replace(/"/g, '').trim();
+        meta.videoOffset = parseInt(p[1]) || 0;
+      } else if (p[0] === '0' || p[0] === 'Background') {
+        const bg = (p[2] || '').replace(/"/g, '').trim();
+        if (bg) meta.background = bg;
+      }
     } else if (section === '[HitObjects]') raw.push(line.split(','));
   }
   const notes = raw.map((p) => {
