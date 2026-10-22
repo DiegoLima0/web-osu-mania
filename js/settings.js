@@ -2,7 +2,7 @@ const KEY = 'osu-mania-web:settings:v1';
 
 export const DEFAULTS = {
   speed: 14,          // 1-40, similar a la velocidad de scroll de osu!mania
-  musicVol: 30,       // 0-100
+  musicVol: 2,        // 0-100 (por defecto 2%)
   sfxVol: 50,         // 0-100
   bgDim: 60,          // 0-100 (oscurecer fondo)
   fieldOpacity: 55,   // 0-100 (opacidad del campo de juego)
@@ -12,9 +12,17 @@ export const DEFAULTS = {
   keys: ['KeyD', 'KeyF', 'KeyJ', 'KeyK'],
 };
 
+const VOL_INIT_KEY = 'osu-mania-web:vol-default-2';
+
 export function loadSettings() {
   try {
-    const s = { ...DEFAULTS, ...JSON.parse(localStorage.getItem(KEY) || '{}') };
+    const raw = JSON.parse(localStorage.getItem(KEY) || '{}');
+    const s = { ...DEFAULTS, ...raw };
+    if (!localStorage.getItem(VOL_INIT_KEY)) {
+      s.musicVol = 2;
+      localStorage.setItem(VOL_INIT_KEY, 'true');
+      saveSettings(s);
+    }
     if (!Array.isArray(s.keys) || s.keys.length !== 4) s.keys = [...DEFAULTS.keys];
     return s;
   } catch { return { ...DEFAULTS, keys: [...DEFAULTS.keys] }; }

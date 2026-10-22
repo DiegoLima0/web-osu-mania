@@ -17,12 +17,31 @@
   <section id="screen-select" class="screen">
     <h1>Osu! Mania <small>4K</small></h1>
     <p class="hint">Elige una canción</p>
-    <div id="song-list"></div>
+    <div id="song-carousel-container">
+      <div id="song-carousel-track"></div>
+    </div>
+    <div id="song-pagination" class="hidden">
+      <button id="btn-prev-page" class="page-nav-btn" title="Página anterior">◀</button>
+      <div id="page-dots"></div>
+      <span id="page-indicator">1 / 1</span>
+      <button id="btn-next-page" class="page-nav-btn" title="Página siguiente">▶</button>
+    </div>
     <div id="preview-bar">
-      <button id="btn-prev-song" class="player-btn" title="Canción anterior">⏮</button>
-      <button id="btn-toggle-preview" class="player-btn" title="Pausar / Reanudar">⏸</button>
-      <button id="btn-next-song" class="player-btn" title="Canción siguiente">⏭</button>
+      <div id="preview-nav">
+        <button id="btn-prev-song" class="player-btn" title="Canción anterior">⏮</button>
+        <button id="btn-toggle-preview" class="player-btn" title="Pausar / Reanudar">⏸</button>
+        <button id="btn-next-song" class="player-btn" title="Canción siguiente">⏭</button>
+      </div>
       <span id="preview-title">Selecciona una canción</span>
+      <div id="index-vol-wrap">
+        <span id="index-vol-icon" title="Volumen de música">🔊</span>
+        <input type="range" id="index-vol-slider" min="0" max="100" step="1" value="2" title="Volumen de música">
+        <span id="index-vol-val">2%</span>
+        <div id="vol-warning-bubble" class="vol-warning-bubble hidden">
+          <span class="vol-warning-icon">⚠️</span>
+          <span>¡Cuidado con el volumen! Puedes ponerlo muy fuerte por accidente.</span>
+        </div>
+      </div>
     </div>
   </section>
 

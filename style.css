@@ -17,19 +17,61 @@ body.playing, body.playing * { cursor: none !important; }
 .hint { color: #999; margin: 0 0 6px; }
 .hint.small { font-size: 12px; }
 
-#song-list { display: flex; flex-direction: column; gap: 8px; width: min(650px, 94vw); max-height: 72vh; overflow-y: auto; overflow-x: hidden; padding-right: 8px; }
-#song-list::-webkit-scrollbar { width: 6px; }
-#song-list::-webkit-scrollbar-thumb { background: #333; border-radius: 4px; }
-.song { width: 100%; height: 86px; border: 1px solid var(--line); border-radius: 10px; padding: 10px 16px; text-align: left; color: #fff; cursor: pointer;
-  background: linear-gradient(90deg, rgba(0,0,0,.85), rgba(0,0,0,.35)), var(--bg) center / cover; transition: transform .15s, border-color .15s; font: inherit; }
+#song-carousel-container { width: min(650px, 94vw); overflow: hidden; box-sizing: border-box; }
+#song-carousel-track { display: flex; width: 100%; transition: transform 0.35s cubic-bezier(0.2, 0.8, 0.2, 1); will-change: transform; }
+.song-page { min-width: 100%; width: 100%; flex-shrink: 0; display: flex; flex-direction: column; gap: 8px; box-sizing: border-box; padding: 2px 6px 2px 2px; }
+.song { display: flex; align-items: center; justify-content: space-between; width: 100%; height: 86px; border: 1px solid var(--line); border-radius: 10px; padding: 10px 16px; text-align: left; color: #fff; cursor: pointer;
+  background: linear-gradient(90deg, rgba(0,0,0,.88) 0%, rgba(0,0,0,.65) 60%, rgba(0,0,0,.35) 100%), var(--bg) center / cover; transition: transform .15s, border-color .15s; font: inherit; box-sizing: border-box; }
 .song:hover, .song.selected { transform: translateX(6px); border-color: var(--accent); }
+.song-info { flex: 1; min-width: 0; padding-right: 12px; }
 .song b { font-size: 19px; display: block; line-height: 1.2; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .song span { color: #bbb; font-size: 12.5px; display: block; line-height: 1.35; }
 
-#preview-bar { display: flex; align-items: center; justify-content: center; gap: 10px; width: min(650px, 94vw); background: var(--panel); border: 1px solid var(--line); border-radius: 30px; padding: 6px 16px; margin-top: 4px; box-shadow: 0 4px 16px rgba(0,0,0,.5); }
+.song-play-btn {
+  width: 44px; height: 44px; min-width: 44px; border-radius: 50%;
+  background: rgba(18, 20, 26, 0.85); border: 2px solid rgba(255, 255, 255, 0.35);
+  color: #fff; font-size: 15px; display: flex; align-items: center; justify-content: center;
+  cursor: pointer; transition: transform 0.15s, background 0.15s, border-color 0.15s, box-shadow 0.15s;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.5); margin: 0; padding: 0;
+}
+.song-play-btn:hover { background: var(--accent); border-color: #ff3377; transform: scale(1.12); box-shadow: 0 0 14px rgba(255, 0, 85, 0.7); }
+.song.playing-preview .song-play-btn { background: var(--accent); border-color: #fff; box-shadow: 0 0 14px rgba(255, 0, 85, 0.9); animation: pulsePlay 1.2s infinite ease-in-out; }
+@keyframes pulsePlay { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.08); } }
+
+#song-pagination { display: flex; align-items: center; justify-content: center; gap: 12px; width: min(650px, 94vw); margin-top: 2px; user-select: none; }
+.page-nav-btn { width: auto; margin: 0; padding: 4px 14px; border-radius: 16px; font-size: 12px; background: #1a1c22; border: 1px solid var(--line); color: #fff; cursor: pointer; transition: background .15s, border-color .15s, opacity .15s; }
+.page-nav-btn:hover:not(:disabled) { background: var(--accent); border-color: var(--accent); }
+.page-nav-btn:disabled { opacity: 0.3; cursor: default; }
+#page-dots { display: flex; align-items: center; gap: 6px; }
+.page-dot { width: 10px; height: 10px; border-radius: 50%; background: #2a2c34; border: 1px solid #444854; padding: 0; margin: 0; cursor: pointer; transition: background .2s, transform .2s, border-color .2s; }
+.page-dot:hover { background: #888; }
+.page-dot.active { background: var(--accent); border-color: #ff3377; transform: scale(1.25); }
+#page-indicator { font-size: 12px; color: #888; font-family: monospace; }
+
+#preview-bar { display: flex; align-items: center; justify-content: space-between; gap: 8px; width: min(650px, 94vw); background: var(--panel); border: 1px solid var(--line); border-radius: 30px; padding: 6px 14px; margin-top: 4px; box-shadow: 0 4px 16px rgba(0,0,0,.5); box-sizing: border-box; }
+#preview-nav { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
 .player-btn { width: auto; margin: 0; padding: 6px 14px; border-radius: 20px; font-size: 15px; background: #1a1c22; border: 1px solid var(--line); color: #fff; cursor: pointer; transition: background .15s, border-color .15s; }
 .player-btn:hover { background: var(--accent); border-color: var(--accent); }
-#preview-title { font-size: 13px; color: #00ffcc; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 380px; }
+#preview-title { font-size: 13px; color: #00ffcc; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex: 1; text-align: left; margin: 0 6px; }
+
+#index-vol-wrap { position: relative; display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+#index-vol-icon { font-size: 14px; user-select: none; cursor: default; }
+#index-vol-slider { width: 130px; height: 6px; margin: 0; accent-color: var(--accent); cursor: pointer; }
+#index-vol-val { font-size: 12px; color: #00ffcc; min-width: 30px; font-family: monospace; text-align: right; }
+
+.vol-warning-bubble {
+  position: absolute; bottom: calc(100% + 12px); right: 0; width: 250px;
+  background: #231b10; border: 1px solid #ffaa00; color: #ffdd88; padding: 8px 12px;
+  border-radius: 8px; font-size: 11.5px; line-height: 1.35;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.8), 0 0 10px rgba(255, 170, 0, 0.3);
+  display: flex; align-items: center; gap: 8px; z-index: 100; pointer-events: auto;
+  animation: popIn 0.2s ease-out;
+}
+.vol-warning-bubble::after {
+  content: ''; position: absolute; top: 100%; right: 40px;
+  border-width: 6px; border-style: solid; border-color: #ffaa00 transparent transparent transparent;
+}
+@keyframes popIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
 
 .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 20px; width: 270px; box-shadow: 0 6px 24px rgba(0,0,0,.5); }
 .panel.center { text-align: center; }
